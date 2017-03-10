@@ -12,6 +12,7 @@ import com.favorites.repository.*;
 import com.favorites.service.CollectService;
 import com.favorites.service.CollectorService;
 import com.favorites.service.LookAroundService;
+import com.favorites.service.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -47,6 +48,8 @@ public class IndexController extends BaseController{
     private CollectService collectService;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+	private RedisService redisService;
 
 	/**
 	 * 随便看看  added by chenzhimin
@@ -57,7 +60,11 @@ public class IndexController extends BaseController{
 	@RequestMapping(value="/index",method=RequestMethod.GET)
 	@LoggerManage(description="首页")
 	public String index(Model model){
-		IndexCollectorView indexCollectorView = collectorService.getCollectors();
+		IndexCollectorView indexCollectorView = (IndexCollectorView) redisService.getObject("collector");
+		if(indexCollectorView==null){
+			indexCollectorView = collectorService.getCollectors();
+			redisService.setObject("collector", indexCollectorView);
+		}
 		model.addAttribute("collector",indexCollectorView);
 		User user = super.getUser();
 		if(null != user){
@@ -105,6 +112,10 @@ public class IndexController extends BaseController{
 		List<UserIsFollow> fiveUsers = lookAroundService.queryFiveUser(this.getUserId());
 
 		collects =lookAroundService.queryCollectExplore(pageable,getUserId(),category);
+		User user = super.getUser();
+		if(null != user){
+			model.addAttribute("user",user);
+		}
 		model.addAttribute("fiveCollects", fivecollects);
 		model.addAttribute("fiveUsers", fiveUsers);
 		model.addAttribute("collects", collects);
@@ -127,13 +138,17 @@ public class IndexController extends BaseController{
 		Sort sort = new Sort(Sort.Direction.DESC, "id");
 		Pageable pageable = new PageRequest(page, size, sort);
 		model.addAttribute("category", category);
-		model.addAttribute("type", "explore");
+		model.addAttribute("type", "lookAround");
 		Favorites favorites = new Favorites();
 		List<CollectSummary> collects = null;
 		List<CollectSummary> fivecollects = lookAroundService.scrollFiveCollect();
 		List<UserIsFollow> fiveUsers = lookAroundService.queryFiveUser(this.getUserId());
 
 		collects =lookAroundService.queryCollectExplore(pageable,getUserId(),category);
+		User user = super.getUser();
+		if(null != user){
+			model.addAttribute("user",user);
+		}
 		model.addAttribute("fiveCollects", fivecollects);
 		model.addAttribute("fiveUsers", fiveUsers);
 		model.addAttribute("collects", collects);
@@ -183,10 +198,19 @@ public class IndexController extends BaseController{
 	public String newFavorites(){
 		return "favorites/newfavorites";
 	}
+
+	@RequestMapping(value="/feedback")
+	@LoggerManage(description="意见反馈页面")
+	public String feedback(Model model){
+		User user = null;
+		user = userRepository.findOne(getUserId());
+		model.addAttribute("user", user);
+		return "favorites/feedback";
+	}
 	
 	@RequestMapping(value="/collect",method=RequestMethod.GET)
 	@LoggerManage(description="收藏页面")
-	public String collect(Model model,Collect collect) {
+	public String collect(Model model) {
 		List<Favorites> favoritesList = favoritesRepository.findByUserId(getUserId());
 		Config config = configRepository.findByUserId(getUserId());
 		List<String> followList = followRepository.findByUserId(getUserId());
@@ -206,7 +230,11 @@ public class IndexController extends BaseController{
 		cookie.setMaxAge(0);
 		cookie.setPath("/");
 		response.addCookie(cookie);
-		IndexCollectorView indexCollectorView = collectorService.getCollectors();
+		IndexCollectorView indexCollectorView = (IndexCollectorView) redisService.getObject("collector");
+		if(indexCollectorView==null){
+			indexCollectorView = collectorService.getCollectors();
+			redisService.setObject("collector", indexCollectorView);
+		}
 		model.addAttribute("collector",indexCollectorView);
 		return "index";
 	}
@@ -250,7 +278,7 @@ public class IndexController extends BaseController{
      * @param size
      * @return
      */
-    @RequestMapping(value="/collector/{userId}/{favoritesId}")
+    @RequestMapping(value="/collector/{userId}/{favoritesId:[0-9]*}")
     @LoggerManage(description="首页收藏家个人首页")
     public String collectorPageShow(Model model, @PathVariable("userId") Long userId, @PathVariable("favoritesId") Long favoritesId, @RequestParam(value = "page", defaultValue = "0") Integer page,
                                  @RequestParam(value = "size", defaultValue = "15") Integer size){
@@ -283,6 +311,10 @@ public class IndexController extends BaseController{
         List<Favorites> favoritesList = favoritesRepository.findByUserId(userId);
         List<String> followUser = followRepository.findFollowUserByUserId(userId);
         List<String> followedUser = followRepository.findFollowedUserByFollowId(userId);
+		Config config = configRepository.findByUserId(getUserId());
+        if(getUserId()==null||getUserId()==0){
+			config = configRepository.findByUserId(userId);
+		}
         model.addAttribute("collectCount",collectCount);
         model.addAttribute("follow",follow);
         model.addAttribute("followed",followed);
@@ -293,6 +325,8 @@ public class IndexController extends BaseController{
         model.addAttribute("followedUser",followedUser);
         model.addAttribute("isFollow",isFollow);
 		model.addAttribute("loginUserInfo",getUser());
+		model.addAttribute("config",config);
+		model.addAttribute("configObj",config);
         return "collector";
     }
 

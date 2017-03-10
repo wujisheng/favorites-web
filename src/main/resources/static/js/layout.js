@@ -16,6 +16,12 @@ $(function() {
 	$("#nicknameError").hide();
 	$("#noticeNum").hide();
 	window.setInterval("myrefresh();",1000*5);
+	window.setInterval((function(){
+		var div = $(".jiathis_style").children(0);
+		if(div.attr("style") =="border:10px solid #7F7F7F; width:300px;"){
+			$("div[style='border:10px solid #7F7F7F; width:300px;']").attr("style","border:10px solid #7F7F7F; width:320px;");
+		}
+	}),"100");
 });
 
 
@@ -96,6 +102,9 @@ function initFavorites(favorites){
 	for(var i=0;i<favorites.length;i++){
 		var id = favorites[i].id ;
 		var name = favorites[i].name;
+		if(getByteLen(name)>16){
+            name = cut_str(name,8)+"...";
+        }
 		var count = favorites[i].count;
 		var url ='/standard/'+ id + "/0";
 		if(name=="未读列表"){
@@ -123,6 +132,35 @@ function initFavorites(favorites){
 	if(null != gconfig){
 		$("#favoritesSelect").val(gconfig.defaultFavorties);
 	}
+}
+
+function getByteLen(val) {
+    var len = 0;
+    for (var i = 0; i < val.length; i++) {
+        var a = val.charAt(i);
+        if (a.match(/[^\x00-\xff]/ig) != null)
+        {
+            len += 2;
+        }
+        else
+        {
+            len += 1;
+        }
+    }
+    return len;
+}
+
+function cut_str(str, len){
+    var char_length = 0;
+    for (var i = 0; i < str.length; i++){
+        var son_str = str.charAt(i);
+        encodeURI(son_str).length > 2 ? char_length += 1 : char_length += 0.5;
+        if (char_length >= len){
+            var sub_len = char_length == len ? i+1 : i;
+            return str.substr(0, sub_len);
+            break;
+        }
+    }
 }
 
 function initConfigDatas(config){
@@ -196,7 +234,8 @@ function userGoUrl(url,params) {
 		userXmlhttp.open("POST",url,true); 
 		userXmlhttp.onreadystatechange = userHandleServerResponse;
 		userXmlhttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8');
-		userXmlhttp.send(params); 
+		userXmlhttp.send(params);
+		with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://v3.jiathis.com/code_mini/jia.js?uid=2126448'];
 	}
 }
 
@@ -222,7 +261,13 @@ function historyBack(){
 function userHandleServerResponse() {
 	if (userXmlhttp.readyState == 4) {		
 		//document.getElementById("mainSection").innerHTML =xmlhttp.responseText;
-		$("#usercontent").html(userXmlhttp.responseText);
+		var text = userXmlhttp.responseText;
+		if(text.indexOf("<title>Favorites error Page</title>") >= 0){
+			window.location.href="/error.html";
+		}else{
+			$("#usercontent").html(userXmlhttp.responseText);
+		}
+
 	}
 }
 
@@ -482,4 +527,17 @@ function myrefresh(){
 			}
 		}
 	});
+}
+var jiathis_config = {};
+function share(url,title,description,pic){
+	description = description + "    -分享自云收藏http://favorites.ren/";
+
+	jiathis_config.data_track_clickback=true;
+		jiathis_config.url=url;
+		jiathis_config.pic=pic;
+		jiathis_config.summary=description;
+		jiathis_config.title=title;
+		jiathis_config.shortUrl=false;
+		jiathis_config.hideMore=false;
+
 }

@@ -42,19 +42,11 @@ $(function(){
 	  	         url:"/collect/collect",
 	  	         data:$("#collect-form").serialize(),
 	  	         success: function(response) {
+	  	             getPraiseStatus($("#ccollectId").val());
 	  	        	 if(response.rspCode == '000000'){
 	  	        		loadFavorites();
-	  					$('#modal-changeSharing').modal('hide');
-	  					if($("#userCheck").val()=="usercontent"){
-	  						userLocationUrl($("#forward").val(),"userAll");
-	  						loadUserFavorites();
-	  					}else if($("#pageType").val()=="garbage"){
-	  						locationUrl($("#forward").val(),"");
-	  					}else if($("#forward").val().lenght > 0){
-	  						locationUrl($("#forward").val(),"home");
-	  					}else{
-	  						locationUrl("/standard/my/0","home");
-	  					}
+	  	        		$('#modal-changeSharing').modal('hide');
+	  					loadUserFavorites();
 	  	        	 }else{
 	  	        		$("#errorMsg").text(response.rspMsg);
 	 			 		$("#errorMsg").show();
@@ -68,8 +60,9 @@ $(function(){
 	  	             console.log(textStatus);
 	  	             console.log(errorThrown);
 	  	         }
-	  	     });
-		});
+	  	  });
+	});
+	smartFavoritesFun($("#ctitle").val(),$("#cdescription").val(),'favoritesSelect');
 });
 
 
@@ -157,64 +150,64 @@ function delLookRecordAll(){
 
 
 function getCollect(id,user){
-     var userId = document.getElementById("userId").value;
-     if(userId != "0"){
-	    $.ajax({
-			async: false,
-			type: 'POST',
-			dataType: 'json',
-			data:"",
-			url: '/collect/detail/'+id,
-			error : function(XMLHttpRequest, textStatus, errorThrown) {
-				console.log(XMLHttpRequest);
-				console.log(textStatus);
-				console.log(errorThrown);
-			},
-			success: function(collect){
-				$("#ctitle").val(collect.title);
-				$("#clogoUrl").val(collect.logoUrl);
-				$("#cremark").val(collect.remark);
-				$("#cdescription").val(collect.description);
-				$("#ccollectId").val(collect.id);
-				$("#curl").val(collect.url);
-				$('#modal-changeSharing').modal('show');
-				if("private" == gconfig.defaultCollectType){
-					$("#type").prop('checked',true);
-				}else{
-					$("#type").prop('checked',false);
-				}
-				if("simple"==gconfig.defaultModel){
-					$("#show2").hide();
-		   			$("#show1").show();
-		   			$("#model2").hide();
-		   			$("#model1").show();
-				}else{
-					$("#show1").hide();
-		   			$("#show2").show();
-		   			$("#model1").hide();
-		   			$("#model2").show();
-				}
-				if("usercontent" == user){
-					if($("#userId").val() == $("#loginUser").val()){
-						$("#favoritesSelect").val(collect.favoritesId);
-					}else{
-						$("#favoritesSelect").val(gconfig.defaultFavorties);
-					}
-				}else{
-					if($("#userId").val() == collect.userId){
-						$("#favoritesSelect").val(collect.favoritesId);
-					}else{
-						$("#favoritesSelect").val(gconfig.defaultFavorties);
-					}
-				}
-				$("#newFavorites").val("");
-				$("#userCheck").val(user);
-				loadFollows();
-			}
-		});
-	}else{
-	    $('#modal-loginTips').modal('show');
-	}
+    var userId = document.getElementById("userId").value;
+    if(userId != "0"){
+        $.ajax({
+            async: false,
+            type: 'POST',
+            dataType: 'json',
+            data:"",
+            url: '/collect/detail/'+id,
+            error : function(XMLHttpRequest, textStatus, errorThrown) {
+                console.log(XMLHttpRequest);
+                console.log(textStatus);
+                console.log(errorThrown);
+            },
+            success: function(collect){
+                $("#ctitle").val(collect.title);
+                $("#clogoUrl").val(collect.logoUrl);
+                $("#cremark").val(collect.remark);
+                $("#cdescription").val(collect.description);
+                $("#ccollectId").val(collect.id);
+                $("#curl").val(collect.url);
+                $('#modal-changeSharing').modal('show');
+                if("private" == gconfig.defaultCollectType){
+                    $("#type").prop('checked',true);
+                }else{
+                    $("#type").prop('checked',false);
+                }
+                if("simple"==gconfig.defaultModel){
+                    $("#show2").hide();
+                    $("#show1").show();
+                    $("#model2").hide();
+                    $("#model1").show();
+                }else{
+                    $("#show1").hide();
+                    $("#show2").show();
+                    $("#model1").hide();
+                    $("#model2").show();
+                }
+                if("usercontent" == user){
+                    if($("#userId").val() == $("#loginUser").val()){
+                        $("#favoritesSelect").val(collect.favoritesId);
+                    }else{
+                        $("#favoritesSelect").val(gconfig.defaultFavorties);
+                    }
+                }else{
+                    if($("#userId").val() == collect.userId){
+                        $("#favoritesSelect").val(collect.favoritesId);
+                    }else{
+                        $("#favoritesSelect").val(gconfig.defaultFavorties);
+                    }
+                }
+                $("#newFavorites").val("");
+                $("#userCheck").val(user);
+                loadFollows();
+            }
+        });
+    }else{
+    	window.location.href="/login";
+    }
 }
 
 
@@ -279,8 +272,41 @@ function changeLike(id){
 			}
 		});
 	}else{
-	    $('#modal-loginTips').modal('show');
+	    window.location.href="/login";
 	}
+}
+
+//查询点赞状态并刷新页面
+function getPraiseStatus(id){
+    $.ajax({
+        async: false,
+        type: 'POST',
+        dataType: 'json',
+        data:'',
+        url: '/collect/getPaiseStatus/'+id,
+        error : function(XMLHttpRequest, textStatus, errorThrown) {
+            console.log(XMLHttpRequest);
+            console.log(textStatus);
+            console.log(errorThrown);
+        },
+        success: function(maps){
+            if(maps.status == "praise"){
+                $("#like"+id).hide();
+                $("#likel"+id).hide();
+                $("#unlike"+id).show();
+                $("#unlikel"+id).show();
+                $("#praiseC"+id).val(parseInt(maps.praiseCount));
+                $("#unlikeS"+id).html("取消点赞("+parseInt(maps.praiseCount)+")");
+            }else{
+                $("#like"+id).show();
+                $("#praiseC"+id).val(parseInt(maps.praiseCount));
+                $("#likeS"+id).html("点赞("+parseInt(maps.praiseCount)+")");
+                $("#likel"+id).show();
+                $("#unlike"+id).hide();
+                $("#unlikel"+id).hide();
+            }
+        }
+    });
 }
 
 
@@ -313,7 +339,7 @@ function switchComment(collectId){
               showComment(collectId);
          }
      }else{
-         $('#modal-loginTips').modal('show');
+         window.location.href="/login";
      }
 }
 
@@ -570,7 +596,9 @@ function loadOtherMore(){
 function listStandardCollect(collects,listId,user){
 	var collectStandardList='';
 	var collect = '';
+    var collectorUserId='';
 	for(var i=0;i<collects.length;i++){
+        collectorUserId=collects[i].userId;
 		if($("#userId").val() != collects[i].userId){
 			collect = "				  <if> "+
 			"				     | "+
@@ -582,7 +610,7 @@ function listStandardCollect(collects,listId,user){
 		}
 		var item =
 		"<li>"+
-		"<a style=\"background-image:url("+(collects[i].profilePicture=='' ? 'img/favicon.png' : collects[i].profilePicture )+")\" class=\"hidden-xs timeline-badge sharing-user-avatar\" href=\"javascript:void(0);\" onclick=\"locationUrl(\'/user/"+collects[i].userId+"/0\',\'\');\" ></a>"+
+		"<a style=\"background-image:url("+(collects[i].profilePicture=='' ? 'img/favicon.png' : '/'+collects[i].profilePicture )+")\" class=\"hidden-xs timeline-badge sharing-user-avatar\" href=\"javascript:void(0);\" onclick=\"locationUrl(\'/user/"+collects[i].userId+"/0\',\'\');\" ></a>"+
 		"<div class=\"timeline-panel\">"+
 		"   <div class=\"popover right\">"+
 		"      <div class=\"arrow\"></div>"+
@@ -673,16 +701,14 @@ function listStandardCollect(collects,listId,user){
 		"         <div class=\"m0\">"+
 		"            <span class=\"icon-folder mr-sm\"></span>"+
 		"            <a onclick=\"locationUrl(\'/standard/"+collects[i].favoriteId+"/"+collects[i].userId+"\',\'"+collects[i].favoriteId+"\');\" class=\"normal-color-a ng-binding\" href=\"javascript:void(0);\">"+collects[i].favoriteName+"</a>"+
-		"            <div class=\"pull-right hidden-xxs\">"+
-		"               <small>"+
-		"                  <a style=\"display:none\" class=\"sharing-action-button\">"+
+		"            <div class=\"pull-right hidden-xxs\" onmouseover=\"share(\'"+collects[i].url+"\',\'"+collects[i].title+"\',\'"+collects[i].description+"\',\'"+collects[i].logoUrl+"\');\">"+
+		"               <small class=\"jiathis_style_32x32\">"+
+		"                  <a href=\"javascript:void(0);\" class=\"jiathis jiathis_txt sharing-action-button\" style=\"font-size: 100%;line-height:25px!important\">"+
 		"                     <span class=\"fa fa-share-alt\"></span>"+
-		"                     	分享"+
+		"                     	分享&nbsp;"+
 		"                  </a>"+
-		"                   <if  style=\"display:none\" > "+
 		"				     | "+
-		"				  </if> "+
-		"                  <a onclick=\"changeLike("+collects[i].id+");\" style=\"display:"+(collects[i].praise? 'none' : 'inline-block')+"\" id=\"like"+collects[i].id+"\" class=\"sharing-action-button\">"+
+		"                  <a onclick=\"changeLike("+collects[i].id+");\" style=\"display:"+(collects[i].praise? 'none' : 'inline-block')+"\" id=\"like"+collects[i].id+"\" class=\"sharing-action-button btn-praise\">"+
 		"                     <span class=\"fa fa-thumbs-o-up\"></span>"+
 		"                     <show id=\"likeS"+collects[i].id+"\">点赞("+collects[i].praiseCount+")</show>"+
 		"                  </a>"+
@@ -709,6 +735,15 @@ function listStandardCollect(collects,listId,user){
 			"                   	    收藏"+
 			"                  </a>";
 		}
+        if($("#loginUserInfo").val()){
+            item=item+"	 <if> "+
+                "				     | "+
+                "				  </if> "+
+                "                  <a class=\"sharing-action-button\" onclick=\"getCollect("+collects[i].id+")\">"+
+                "                     <span class=\"fa fa-spoon\"></span>"+
+                "                   	    收藏"+
+                "                  </a>";
+        }
 			item=item+		"               </small>"+
 		"            </div>"+
 		"         </div>"+
@@ -733,7 +768,18 @@ function listStandardCollect(collects,listId,user){
 		"</li>";
 		collectStandardList=collectStandardList+item;
 	}
-	 $("#"+listId).append(collectStandardList);
+	$("#"+listId).append(collectStandardList);
+	with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://v3.jiathis.com/code_mini/jia.js?uid=2126448'];
+	if($("#loginUserInfo").val()==""){
+        $(".sharing-action-button.btn-praise").removeAttr("onclick");
+        $(".input-group").hide();
+    }
+    if($("#collector").val()){
+        if($("#loginUserInfo").val() != collectorUserId){
+            $(".pull-right.dropdown.dropdown-list").hide();
+            $(".deco-none").hide();
+        }
+    }
 }
 
 
@@ -793,7 +839,7 @@ function listSimpleCollect(collects,user){
 			"   <td width=\"10%\" class=\"text-center\">"+
 			"     <img height=\"25px\" width=\"35px\" src=\""+(collects[i].logoUrl=='' ? 'img/favicon.png' : collects[i].logoUrl )+"\" alt=\"\"></td>"+
 			"   <td width=\"15%\" class=\"text-center\">"+
-			"    <div>";			if($("#userId").val() == collects[i].userId){
+			"    <div class=\"simplemodify\">";			if($("#userId").val() == collects[i].userId){
 				item=item+
                 "    <a onclick=\"getCollect("+collects[i].id+",'"+user+"');\" class=\"mr\" href=\"javascript:void(0);\"> <i class=\"fa fa-pencil\"></i>"+
 				"    </a>"+
@@ -806,6 +852,9 @@ function listSimpleCollect(collects,user){
 		collectSimpleList=collectSimpleList+item;
 	}
 	 $("#collectSimpleList").append(collectSimpleList);
+    if($("#loginUserInfo").val()!=$("#userId").val()){
+        $(".simplemodify").hide();
+    }
 }
 
 $(function() {
@@ -860,7 +909,8 @@ $(function() {
 	});
 });
 
-function showCategory(category){
+function lookAroundInit(category){
+
     var categoryArr = ['ALL','TRAVEL','FOOD','EXERCISE','PHOTOGRAPH','MUSIC','REARING',
     'LOVE','BUSINESS','ART','MANAGER','MARKET','RUNNING'];
     $("#category"+category).addClass('active');
@@ -869,5 +919,7 @@ function showCategory(category){
             $("#category"+categoryArr[i]).removeClass('active');
         }
     }
+    loadConfig();
+    loadFavorites();
 }
 

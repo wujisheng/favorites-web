@@ -37,7 +37,8 @@ public class CollectorRepositoryImpl extends BaseNativeSqlRepository implements 
     @Override
     public Long getMostFollowedUser(Long notUserId) {
         String querySql = "SELECT id,follow_id as user_id,COUNT(1) AS counts FROM follow \n" +
-                "WHERE follow_id != " + notUserId +" GROUP BY follow_id ORDER BY counts DESC LIMIT 1";
+                "WHERE follow_id != " + notUserId +
+                " GROUP BY follow_id ORDER BY counts DESC LIMIT 1";
         CollectorView cv = new CollectorView();
         List<CollectorView> list = sqlObjectList(querySql,cv);
         Long userId = list.get(0).getUserId();
@@ -53,7 +54,7 @@ public class CollectorRepositoryImpl extends BaseNativeSqlRepository implements 
     public Long getMostPraisedUser(String notUserIds) {
         String querySql = "SELECT c.user_id,SUM(p.counts) as counts FROM collect c LEFT JOIN \n" +
                 "(SELECT collect_id,COUNT(1) as counts FROM praise GROUP BY collect_id)p \n" +
-                "ON c.id=p.collect_id WHERE c.user_id NOT IN (" + notUserIds +")\n" +
+                "ON c.id=p.collect_id WHERE c.user_id NOT IN (" + notUserIds +") \n" +
                 "GROUP BY c.user_id ORDER BY counts DESC LIMIT 1";
         List<Object[]> objecArraytList = sqlArrayList(querySql);
         Object[] obj =  objecArraytList.get(0);
@@ -69,7 +70,7 @@ public class CollectorRepositoryImpl extends BaseNativeSqlRepository implements 
     public Long getMostCommentedUser(String notUserIds) {
         String querySql="SELECT c.user_id,SUM(p.counts) as counts FROM collect c LEFT JOIN \n" +
                 "(SELECT collect_id,COUNT(1) as counts FROM `comment` GROUP BY collect_id)p \n" +
-                "ON c.id=p.collect_id WHERE c.user_id NOT IN (" + notUserIds +")\n" +
+                "ON c.id=p.collect_id WHERE c.user_id NOT IN (" + notUserIds +") \n" +
                 "GROUP BY c.user_id ORDER BY counts DESC LIMIT 1";
         List<Object[]> objecArraytList = sqlArrayList(querySql);
         Object[] obj =  objecArraytList.get(0);
